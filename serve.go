@@ -15,6 +15,7 @@ import (
 
 var (
 	err      error
+	db       *mgo.Database
 	c        *mgo.Collection
 	partners []string
 )
@@ -22,7 +23,6 @@ var (
 type doc struct {
 	NativeID  string
 	ForeignID string
-	PartnerID string
 }
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 	session, err := mgo.Dial(*mongoServer)
 	check(err)
 	defer session.Close()
-	c = session.DB("db").C("collection")
+	db = session.DB("db")
 
 	http.HandleFunc("/", root)
 	fmt.Println("Listening on port:", *port)
@@ -45,21 +45,17 @@ func root(w http.ResponseWriter, r *http.Request) {
 	nativeID, err := r.Cookie("nativeID")
 	if nativeID == nil {
 		fmt.Println("Seting new native cookie")
-		http.SetCookie(w, &http.Cookie{Name: "nativeID", Value: newID(r), Expires: time.Now().Add(365 * 24 * time.Hour)})
+		setNativeCookie(&w, r)
 	} else {
 		check(err)
 	}
 	io.WriteString(w, "Hello, I'm the root\n")
 }
 
-func newID(r *http.Request) string {
+func setNativeCookie(w *http.ResponseWriter, r *http.Request) {
 	h := sha1.New()
-	rand := time.Now().String()
-	for _, c := range r.Cookies() {
-		rand += c.Value
-	}
-	h.Write([]byte(rand))
-	return hex.EncodeToString(h.Sum(nil))
+	h.Write([]byte(time.Now().String() + r.RemoteAddr))
+	http.SetCookie(*w, &http.Cookie{Name: "nativeID", Value: hex.EncodeToString(h.Sum(nil)), Expires: time.Now().Add(365 * 24 * time.Hour)})
 }
 
 func check(err error) {
