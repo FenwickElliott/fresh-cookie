@@ -2,18 +2,10 @@ package main
 
 import (
 	"encoding/csv"
-	"flag"
 	"os"
-
-	mgo "gopkg.in/mgo.v2"
 )
 
 func init() {
-	go getPartners()
-	go setDB()
-}
-
-func getPartners() {
 	partnerFile := "./partnerFile.csv"
 
 	f, err := os.Open(partnerFile)
@@ -31,14 +23,4 @@ func getPartners() {
 		p := partner{line[0], line[1], scope}
 		partners = append(partners, p)
 	}
-}
-
-func setDB() {
-	mongoServer := flag.String("mongoServer", "127.0.0.1", "Mongo Server Address")
-	flag.Parse()
-
-	session, err := mgo.Dial(*mongoServer)
-	check(err)
-	defer session.Close()
-	db = session.DB("db")
 }
