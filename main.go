@@ -29,7 +29,7 @@ type partner struct {
 }
 
 func main() {
-	port := flag.String("port", "80", "port")
+	port := flag.String("port", "443", "port")
 	mongoServer := flag.String("mongoServer", "127.0.0.1", "Mongo Server Address")
 	flag.Parse()
 
@@ -42,7 +42,7 @@ func main() {
 	http.HandleFunc("/in", in)
 	http.HandleFunc("/find", find)
 	fmt.Println("Listening on port:", *port)
-	log.Fatal(http.ListenAndServe(":"+*port, nil))
+	log.Fatal(http.ListenAndServeTLS(":"+*port, "server.crt", "server.key", nil))
 }
 
 func root(w http.ResponseWriter, r *http.Request) {
