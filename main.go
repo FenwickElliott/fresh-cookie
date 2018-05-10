@@ -17,25 +17,23 @@ import (
 var (
 	err      error
 	db       *mgo.Database
-	c        *mgo.Collection
-	partners []string
+	partners []partner
 )
 
-type doc struct {
+type association struct {
 	NativeID  string
 	ForeignID string
 }
 
-func main() {
-	partners = append(partners, "inception")
-	port := flag.String("port", "80", "port")
-	mongoServer := flag.String("mongoServer", "127.0.0.1", "Mongo Server Address")
-	flag.Parse()
+type partner struct {
+	PartnerID  string
+	AuthHeader string
+	Scope      []string
+}
 
-	session, err := mgo.Dial(*mongoServer)
-	check(err)
-	defer session.Close()
-	db = session.DB("db")
+func main() {
+	port := flag.String("port", "80", "port")
+	flag.Parse()
 
 	http.HandleFunc("/", root)
 	http.HandleFunc("/in", in)
@@ -62,10 +60,10 @@ func in(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c := db.C(r.FormValue("partner"))
-	err = c.Insert(doc{nativeID.Value, r.FormValue("cookie")})
+	err = c.Insert(association{nativeID.Value, r.FormValue("cookie")})
 	check(err)
 
-	err = c.Find(bson.M{"nativeid": nativeID.Value}).One(&doc{})
+	err = c.Find(bson.M{"nativeid": nativeID.Value}).One(&association{})
 	if err != nil {
 		io.WriteString(w, err.Error())
 	} else {
