@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 var (
@@ -37,6 +38,7 @@ func main() {
 	db = session.DB("db")
 
 	http.HandleFunc("/", root)
+	http.HandleFunc("/in", in)
 	fmt.Println("Listening on port:", *port)
 	log.Fatal(http.ListenAndServe(":"+*port, nil))
 }
@@ -50,6 +52,25 @@ func root(w http.ResponseWriter, r *http.Request) {
 		check(err)
 	}
 	io.WriteString(w, "Hello, I'm the root\n")
+}
+
+func in(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	nativeID, err := r.Cookie("nativeID")
+	if nativeID != nil {
+		check(err)
+	}
+
+	c := db.C(r.FormValue("partner"))
+	err = c.Insert(doc{nativeID.Value, r.FormValue("cookie")})
+	check(err)
+
+	err = c.Find(bson.M{"nativeid": nativeID.Value}).One(&doc{})
+	if err != nil {
+		io.WriteString(w, err.Error())
+	} else {
+		io.WriteString(w, "Added to database")
+	}
 }
 
 func setNativeCookie(w *http.ResponseWriter, r *http.Request) {
